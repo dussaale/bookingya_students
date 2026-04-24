@@ -28,3 +28,23 @@ jobs:
 
       - name: Run TDD and BDD tests
         run: mvn clean test
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        run: |
+          cd "playwright- test atdd"
+          npm install
+          npx playwright install --with-deps chromium
+
+      - name: Give Playwright permissions
+        run: |
+          chmod +x "$(find /home/runner/.cache/ms-playwright -name 'chrome' -o -name 'chromium' | head -1)"
+
+      - name: Run ATDD tests
+        run: |
+          cd "playwright- test atdd"
+          npx playwright test
