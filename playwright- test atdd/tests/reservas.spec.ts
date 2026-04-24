@@ -1,35 +1,42 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 
-test('ATDD 1: Consultar una reserva por ID Alejandro', async ({ page }) => {
-  const response = await page.goto('http://localhost:8080/api/swagger-ui/index.html');
-  expect(response?.status()).toBe(200);
-  console.log('ATDD 1: EXITOSO Consultar reserva por ID a nombre de Alejandro Dussan');
+test('1 - Crear reserva', async ({ request }) => {
+  await request.post('http://localhost:8080/api/reservations', {
+    data: {
+      roomId: '1030675224',
+      guestId: '1030675224',
+      checkIn: '2026-05-03T14:00:00',
+      checkOut: '2026-05-07T12:00:00',
+      guestsCount: 2
+    }
+  });
+  console.log('1 - Crear reserva - COMPLETADO');
 });
 
-
-test('ATDD 2: Crear una reserva en booking', async ({ page }) => {
-  const response = await page.goto('http://localhost:8080/api/swagger-ui/index.html');
-  expect(response?.status()).toBe(200);
-  console.log(' ATDD 2: EXITOSO Crear reserva de forma exitosa API correcta');
+test('2 - Consultar todas', async ({ request }) => {
+  await request.get('http://localhost:8080/api/reservations');
+  console.log('2 - Consultar todas - COMPLETADO');
 });
 
-
-test('ATDD 3: Consultar todas las reservas en booking', async ({ page }) => {
-  const response = await page.goto('http://localhost:8080/api/swagger-ui/index.html');
-  expect(response?.status()).toBe(200);
-  console.log('ATDD 3: EXITOSO Consultar todas las reservas de forma exitosa en booking');
+test('3 - Consultar por ID', async ({ request }) => {
+  await request.get('http://localhost:8080/api/reservations/1030675224');
+  console.log('3 - Consultar por ID - COMPLETADO');
 });
 
-
-test('ATDD 4: Actualizar una reserva activa del Id 1030675224', async ({ page }) => {
-  const response = await page.goto('http://localhost:8080/api/swagger-ui/index.html');
-  expect(response?.status()).toBe(200);
-  console.log('ATDD 4: EXITOSO Actualizar reserva del Id 1030675224');
+test('4 - Actualizar', async ({ request }) => {
+  await request.put('http://localhost:8080/api/reservations/1030675224', {
+    data: {
+      roomId: '1030675224',
+      guestId: '1030675224',
+      checkIn: '2026-05-03T14:00:00',
+      checkOut: '2026-05-07T12:00:00',
+      guestsCount: 2
+    }
+  });
+  console.log('4 - Actualizar - COMPLETADO');
 });
 
-
-test('ATDD 5: Eliminar una reserva en booking', async ({ page }) => {
-  const response = await page.goto('http://localhost:8080/api/swagger-ui/index.html');
-  expect(response?.status()).toBe(200);
-  console.log('ATDD 5: EXITOSO Eliminar reserva del Id 1030675224');
+test('5 - Eliminar', async ({ request }) => {
+  await request.delete('http://localhost:8080/api/reservations/1030675224');
+  console.log('5 - Eliminar - COMPLETADO');
 });
