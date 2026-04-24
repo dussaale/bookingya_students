@@ -34,17 +34,12 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Playwright
+      - name: Install Playwright with npx
         run: |
           cd "playwright- test atdd"
-          npm install
           npx playwright install --with-deps chromium
 
-      - name: Give Playwright permissions
-        run: |
-          chmod +x "$(find /home/runner/.cache/ms-playwright -name 'chrome' -o -name 'chromium' | head -1)"
-
-      - name: Run ATDD tests
+      - name: Run ATDD tests with npx
         run: |
           cd "playwright- test atdd"
           npx playwright test
