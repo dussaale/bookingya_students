@@ -1,4 +1,4 @@
-name: Java CI with Maven
+name: BookingYa CI - All Phases
 
 on:
   push:
@@ -22,24 +22,32 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Create .env file
-        run: |
-          echo "SPRING_PROFILES_ACTIVE=h2" >> .env
 
       - name: Run TDD and BDD tests
-        run: mvn clean test
+        run: mvn clean verify
+
+
+      - name: Build and Start Spring Boot App
+        run: |
+          mvn package -DskipTests
+          java -jar target/*.jar &
+        
+
+      - name: Wait for API to be ready
+        run: npx wait-on http://localhost:8080/api/reservations --timeout 60000
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install Playwright with npx
+      - name: Install ATDD Dependencies
         run: |
           cd "playwright- test atdd"
+          npm install
           npx playwright install --with-deps chromium
 
-      - name: Run ATDD tests with npx
+      - name: Run ATDD tests
         run: |
           cd "playwright- test atdd"
           npx playwright test
