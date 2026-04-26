@@ -1,5 +1,6 @@
 package com.project.bookingya.bdd;
 
+import com.project.bookingya.tdd.ReservaServiceTest;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.When;
 import io.cucumber.java.en.Then;
@@ -25,7 +26,8 @@ public class ReservaStepDefinitions {
 
     @Given("que el huésped {string} quiere reservar la habitación {string} y la fecha de entrada es {string}")
     public void queElHuespedQuiereReservarLaHabitacionYLaFecha(String huesped, String habitacion, String fecha) {
-        System.out.println("Dado: Huésped '" + huesped + "' quiere reservar habitación '" + habitacion + "' en fecha: " + fecha);
+        ReservaServiceTest test = new ReservaServiceTest();
+        test.testCreateReservation();
     }
 
     @When("realizo la reserva")
