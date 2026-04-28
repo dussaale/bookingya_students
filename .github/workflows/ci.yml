@@ -31,7 +31,7 @@ jobs:
           java -Dspring.profiles.active=h2 -jar target/*.jar > app_log.txt 2>&1 &
 
       - name: Wait for API to be ready
-        run: npx wait-on http://localhost:8080/api/reservations --timeout 180000
+        run: npx wait-on tcp:8080 --timeout 180000
 
       - name: Debug App Startup (on failure)
         if: failure()
