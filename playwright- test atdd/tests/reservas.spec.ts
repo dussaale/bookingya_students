@@ -6,11 +6,6 @@ import { ReservationsClient } from '../src/api/ReservationsClient';
 
 
 /*
-Creación de una reserva - DONE
-Consulta de una reserva - DONE
-Obtención de una reserva por ID - DONE
-Actualización de una reserva existente - DONE
-Eliminación de una reserva - DONE
 
 Creación de una reserva - DONE
 Actualización de una reserva existente - DONE
@@ -18,6 +13,12 @@ Eliminación (cancelación) de una reserva
 Consulta de todas las reservas - DONE
 Obtención de una reserva por ID - DONE
 Consulta de reservas por usuario - DONE
+
+Casos Alternativos
+Crear el mismo usuario - DONE
+crear la misma habitacion - DONE
+Eliminación (cancelación) de una reserva no existente - DONE
+Obtención de una reserva por ID no existente - DONE
 
 */
 
@@ -52,7 +53,7 @@ let reservationId: any;
 
     const guest = await guestClient.createGuest({
         "identification": GUEST_ID,
-        "name": "Santiago",
+        "name": "Alejo",
         "email": GUEST_EMAIL
     });
 
@@ -127,12 +128,77 @@ let reservationId: any;
     console.log(`Reservacion actualizada: \n${JSON.stringify(body, null, 2)}`);
   });
 
-  test('5 - Eliminar reserva (Cancelación)', async ({ request }) => {
+  test('6 - Eliminar reserva (Cancelación)', async ({ request }) => {
     const reservationsClient = new ReservationsClient(request);
 
     const deleteReservations = await reservationsClient.deleteReservationsById(reservationId.id);
   
     expect(deleteReservations.status()).toBe(200); 
+    console.log('Reserva eliminada');
+  });
+
+  test('7 - Crear un huespet ya existente', async ({ request }) => {
+
+    
+    const guestClient = new GuestClient(request);
+
+    const guest = await guestClient.createGuest(    {
+        "identification": GUEST_ID,
+        "name": "Alejo",
+        "email": GUEST_EMAIL
+    });
+
+    guestId = await guest.json();
+
+    expect(guest.status()).toBe(409); 
+    expect(guestId).toHaveProperty('error');
+    expect(guestId.error).toEqual("Guest already exists");
+    console.log(`No se pudo crear el cliente ya existente`);
+  });
+
+
+  test('8 - Crear una habitacion ya existente', async ({ request }) => {
+
+    const roomClient = new RoomClient(request);
+
+    const room = await roomClient.createRoom({
+        "code": ROOM_CODE,
+        "name": "Santiago",
+        "city": "Riohacha",
+        "maxGuests": 2,
+        "nightlyPrice": 50000,
+        "available": true
+    });
+
+    roomId = await room.json();
+
+    expect(room.status()).toBe(409); 
+    expect(roomId).toHaveProperty('error');
+    expect(roomId.error).toEqual("Room already exists");
+    console.log(`No se pudo crear el cliente ya existente`);
+  });
+
+    test('9 - Eliminar reserva no existente', async ({ request }) => {
+    const reservationsClient = new ReservationsClient(request);
+
+    const deleteReservations = await reservationsClient.deleteReservationsById("27f073bb-5686-4223-8d52-1aeb59b3ae68");
+  
+   const deleteId = await deleteReservations.json();
+    expect(deleteReservations.status()).toBe(404); 
+    expect(deleteId).toHaveProperty('error');
+    expect(deleteId.error).toEqual("Reservation not found");
+    console.log('Reserva eliminada');
+  });
+
+    test('10 - Obtener una reserva no existente', async ({ request }) => {
+     const reservationsClient = new ReservationsClient(request);
+
+    const reservations = await reservationsClient.getReservationsById("27f073bb-5686-4223-8d52-1aeb59b3ae68");
+  
+   const reservatioId = await reservations.json();
+    expect(reservations.status()).toBe(404); 
+    expect(reservatioId).toHaveProperty('error');
+    expect(reservatioId.error).toEqual("Reservation not found");
     console.log('Reserva eliminada');
   });
 

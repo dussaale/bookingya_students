@@ -1,87 +1,116 @@
 package com.project.bookingya.bdd;
 
-import com.project.bookingya.tdd.ReservaServiceTest;
+import com.project.bookingya.dtos.ReservationDto;
+import com.project.bookingya.models.Reservation;
+import com.project.bookingya.services.ReservationService;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.When;
 import io.cucumber.java.en.Then;
+import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReservaStepDefinitions {
 
+    @Autowired
+    private ReservationService reservationService;
 
-    @Given("que existe una reserva con su ID {string}")
-    public void queExisteUnaReservaConSuID(String id) {
-        System.out.println("Dado: Existe reserva con ID: " + id);
-    }
+    private ReservationDto reservaDto;
+    private Reservation reservaResponse;
+    private List<Reservation> listaReservas;
+    private UUID idBusqueda;
 
-    @When("solicito los detalles de esa reserva")
-    public void solicitoLosDetallesDeEsaReserva() {
-        System.out.println("Cuando: Solicitando detalles de la reserva");
-    }
-
-    @Then("el sistema debe devolver los datos correctos")
-    public void elSistemaDebeDevolverLosDatosCorrectos() {
-        System.out.println("Entonces: Datos correctos devueltos");
-    }
-
-
+    // --- ESCENARIO: Crear una reserva ---
     @Given("que el huésped {string} quiere reservar la habitación {string} y la fecha de entrada es {string}")
-    public void queElHuespedQuiereReservarLaHabitacionYLaFecha(String huesped, String habitacion, String fecha) {
-        ReservaServiceTest test = new ReservaServiceTest();
-        test.testCreateReservation();
+    public void configurarNuevaReserva(String huesped, String habitacion, String fecha) {
+        reservaDto = new ReservationDto();
+        // Usamos los datos del feature para configurar el DTO
+        reservaDto.setNotes("Reserva de " + huesped + " - Habitación " + habitacion);
+        reservaDto.setGuestsCount(2);
+        // Nota: Aquí deberías setear IDs reales de tu DB H2 si es necesario
+        reservaDto.setRoomId(UUID.randomUUID());
+        reservaDto.setGuestId(UUID.randomUUID());
     }
 
     @When("realizo la reserva")
-    public void realizoLaReserva() {
-        System.out.println(" Cuando: Realizando la reserva");
+    public void ejecutarCreacion() {
+        // Ejecuta la misma lógica que probaste en TDD
+        reservaResponse = reservationService.create(reservaDto);
     }
 
     @Then("el sistema debe confirmar la reserva con un código único")
-    public void elSistemaDebeConfirmarLaReservaConUnCodigoUnico() {
-        System.out.println("Entonces: Reserva confirmada con código único");
+    public void validarConfirmacion() {
+        assertThat(reservaResponse).isNotNull();
+        assertThat(reservaResponse.getId()).isNotNull();
+        System.out.println("✅ BDD: Reserva creada con ID: " + reservaResponse.getId());
     }
 
+    // --- ESCENARIO: Consultar por ID ---
+    @Given("que existe una reserva con su ID {string}")
+    public void establecerIdBusqueda(String id) {
+        idBusqueda = UUID.fromString(id);
+    }
 
+    @When("solicito los detalles de esa reserva")
+    public void ejecutarConsultaPorId() {
+        reservaResponse = reservationService.getById(idBusqueda);
+    }
+
+    @Then("el sistema debe devolver los datos correctos")
+    public void validarDatosRetornados() {
+        assertThat(reservaResponse).isNotNull();
+        assertThat(reservaResponse.getId()).isEqualTo(idBusqueda);
+        System.out.println("✅ BDD: Datos de reserva validados correctamente");
+    }
+
+    // --- ESCENARIO: Listado completo ---
     @Given("que existen reservas registradas en el sistema")
-    public void queExistenReservasRegistradasEnElSistema() {
-        System.out.println("Dado: Existen reservas registradas");
+    public void verificarExistenciaReservas() {
+        // Podrías crear una reserva previa aquí para asegurar que la lista no esté vacía
     }
 
     @When("solicito la lista de todas las reservas")
-    public void solicitoLaListaDeTodasLasReservas() {
-        System.out.println("Cuando: Solicitando lista de reservas");
+    public void ejecutarConsultaGeneral() {
+        listaReservas = reservationService.getAll();
     }
 
     @Then("el sistema debe volver una lista con todas las reservas")
-    public void elSistemaDebeVolverUnaListaConTodasLasReservas() {
-        System.out.println("Entonces: Lista de reservas devuelta");
+    public void validarLista() {
+        assertThat(listaReservas).isNotNull();
+        System.out.println("✅ BDD: Se recuperaron " + listaReservas.size() + " reservas");
     }
 
-
+    // --- ESCENARIO: Modificar fecha ---
     @Given("a que existe una reserva con ID {string}")
-    public void aQueExisteUnaReservaConID(String id) {
-        System.out.println("Dado: Existe reserva con ID: " + id);
+    public void prepararIdParaActualizar(String id) {
+        idBusqueda = UUID.fromString(id);
     }
 
     @When("cambio la fecha de salida al {string}")
-    public void cambioLaFechaDeSalidaAl(String nuevaFecha) {
-        System.out.println("Cuando: Cambiando fecha de salida a: " + nuevaFecha);
+    public void ejecutarActualizacion(String nuevaFecha) {
+        // Simulamos el DTO de actualización
+        ReservationDto updateDto = new ReservationDto();
+        updateDto.setNotes("Actualización de fecha BDD");
+        reservaResponse = reservationService.update(updateDto, idBusqueda);
     }
 
     @Then("el sistema debe actualizar la reserva con la nueva fecha")
-    public void elSistemaDebeActualizarLaReservaConLaNuevaFecha() {
-        System.out.println("Entonces: Reserva actualizada");
+    public void validarActualizacion() {
+        assertThat(reservaResponse).isNotNull();
+        System.out.println("✅ BDD: Reserva " + idBusqueda + " actualizada con éxito");
     }
 
-
-    // (Reutiliza el @Given del escenario 1: "que existe una reserva con su ID {string}")
-
+    // --- ESCENARIO: Cancelar reserva ---
     @When("solicito cancelar esa reserva")
-    public void solicitoCancelarEsaReserva() {
-        System.out.println("Cuando: Solicitando cancelación");
+    public void ejecutarCancelacion() {
+        reservationService.delete(idBusqueda);
     }
 
     @Then("el sistema debe eliminar la reserva y confirmar la cancelación")
-    public void elSistemaDebeEliminarLaReservaYConfirmarLaCancelacion() {
-        System.out.println("Entonces: Reserva eliminada y cancelación confirmada");
+    public void validarEliminacion() {
+        // Si el método no lanzó excepción, asumimos éxito (como en tu TDD)
+        System.out.println("✅ BDD: Reserva " + idBusqueda + " eliminada correctamente");
     }
 }

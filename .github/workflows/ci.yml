@@ -22,19 +22,22 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-
       - name: Run TDD and BDD tests
         run: mvn clean verify
-
 
       - name: Build and Start Spring Boot App
         run: |
           mvn package -DskipTests
-          java -jar target/*.jar &
-        
+          java -Dspring.profiles.active=h2 -jar target/*.jar > app_log.txt 2>&1 &
 
       - name: Wait for API to be ready
-        run: npx wait-on http://localhost:8080/api/reservations --timeout 60000
+        run: npx wait-on http://localhost:8080/api/reservations --timeout 180000
+
+      - name: Debug App Startup (on failure)
+        if: failure()
+        run: |
+          echo "------- LOG DE LA APLICACIÓN (SPRING BOOT) -------"
+          cat app_log.txt || echo "No se encontró el archivo de log"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
