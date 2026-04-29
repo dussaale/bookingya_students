@@ -8,8 +8,10 @@ import org.junit.runner.RunWith;
 @CucumberOptions(
         features = "src/test/resources/features",
         glue = "com.project.bookingya.bdd",
-        plugin = {"pretty", "html:target/cucumber-reports.html"},
-        objectFactory = cucumber.runtime.SerenityObjectFactory.class
+        plugin = {"pretty", "html:target/cucumber-reports.html",
+                "json:target/cucumber.json"},
+        objectFactory = cucumber.runtime.SerenityObjectFactory.class,
+        monochrome = true
 )
 public class CucumberTestRunner {
 }
