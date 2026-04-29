@@ -22,17 +22,29 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Run TDD and BDD tests
-        run: mvn clean verify
+      # 1. Ejecutamos SOLO TDD (Tests unitarios) primero
+      - name: Run TDD (Unit Tests)
+        run: mvn test -Dtest=*Test
 
-      - name: Build and Start Spring Boot App
+      # 2. Compilar el JAR omitiendo tests para ir más rápido
+      - name: Build Spring Boot App
+        run: mvn package -DskipTests
+
+      # 3. Levantar la aplicación en segundo plano
+      - name: Start Spring Boot App
         run: |
-          mvn package -DskipTests
           java -Dspring.profiles.active=h2 -jar target/*.jar > app_log.txt 2>&1 &
 
+      # 4. Esperar a que la API responda en el puerto 8080
       - name: Wait for API to be ready
-        run: npx wait-on tcp:8080 --timeout 180000
+        run: npx wait-on http://localhost:8080/api/reservations --timeout 180000
 
+      # 5. AHORA ejecutamos los tests de BDD (Cucumber + RestAssured)
+      # Usamos verify y filtramos por el Runner de Cucumber
+      - name: Run BDD (Cucumber Tests)
+        run: mvn test -Dtest=CucumberTestRunner
+
+      # 6. Depuración si algo falla arriba
       - name: Debug App Startup (on failure)
         if: failure()
         run: |
@@ -48,10 +60,17 @@ jobs:
         run: |
           cd "playwright- test atdd"
           npm install
-          chmod +x node_modules/.bin/playwright
           npx playwright install --with-deps chromium
 
       - name: Run ATDD tests
         run: |
           cd "playwright- test atdd"
           npx playwright test
+
+      # Opcional: Subir logs como artefacto si falló
+      - name: Upload Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spring-boot-logs
+          path: app_log.txt
