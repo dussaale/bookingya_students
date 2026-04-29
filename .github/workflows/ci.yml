@@ -37,7 +37,7 @@ jobs:
 
       # 4. Esperar a que la API responda en el puerto 8080
       - name: Wait for API to be ready
-        run: npx wait-on http://localhost:8080/api/reservations --timeout 180000
+        run: npx wait-on tcp:8080 --timeout 180000
 
       # 5. AHORA ejecutamos los tests de BDD (Cucumber + RestAssured)
       # Usamos verify y filtramos por el Runner de Cucumber
