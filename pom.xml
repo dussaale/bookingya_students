@@ -23,6 +23,14 @@
     </properties>
 
     <dependencies>
+
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-spring</artifactId>
+            <version>7.15.0</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- ========== CUCUMBER (BDD) ========== -->
         <dependency>
             <groupId>io.cucumber</groupId>
