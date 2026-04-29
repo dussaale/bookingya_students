@@ -1,0 +1,2 @@
+INSERT INTO guest (id, identification, name, email) VALUES ('ae040f15-0aca-4d77-9e9b-854dce590b16', '894493', 'Alejo', 'SAM@3434d.com');
+INSERT INTO room (id, code, name, city, max_guests, nightly_price, available) VALUES ('b8fcfbb1-2b02-4ca5-9403-d2f01ec8a166', 'CD0002', 'Hb 1', 'Riohacha', 2, 50000.00, true);
