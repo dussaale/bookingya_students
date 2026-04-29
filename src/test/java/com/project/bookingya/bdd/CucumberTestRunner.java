@@ -9,7 +9,7 @@ import org.junit.runner.RunWith;
         features = "src/test/resources/features",
         glue = "com.project.bookingya.bdd",
         plugin = {"pretty", "html:target/cucumber-reports.html"},
-        tags = "@reservas"
+        objectFactory = cucumber.runtime.SerenityObjectFactory.class
 )
 public class CucumberTestRunner {
 }

@@ -1,116 +1,157 @@
 package com.project.bookingya.bdd;
 
 import com.project.bookingya.dtos.ReservationDto;
-import com.project.bookingya.models.Reservation;
-import com.project.bookingya.services.ReservationService;
+import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
-import io.cucumber.java.en.When;
 import io.cucumber.java.en.Then;
-import org.springframework.beans.factory.annotation.Autowired;
-import java.util.List;
+import io.cucumber.java.en.When;
+import io.restassured.http.ContentType;
+import io.restassured.response.Response;
+import java.time.LocalDateTime;
+import net.serenitybdd.core.Serenity;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.*;
 
 public class ReservaStepDefinitions {
 
-    @Autowired
-    private ReservationService reservationService;
+    private final String BASE_URL = "http://localhost:8080/api/reservation";
+    private Response response;
+    private ReservationDto reservationDto = new ReservationDto();
+    private String idReservaActual;
 
-    private ReservationDto reservaDto;
-    private Reservation reservaResponse;
-    private List<Reservation> listaReservas;
-    private UUID idBusqueda;
-
-    // --- ESCENARIO: Crear una reserva ---
-    @Given("que el huésped {string} quiere reservar la habitación {string} y la fecha de entrada es {string}")
-    public void configurarNuevaReserva(String huesped, String habitacion, String fecha) {
-        reservaDto = new ReservationDto();
-        // Usamos los datos del feature para configurar el DTO
-        reservaDto.setNotes("Reserva de " + huesped + " - Habitación " + habitacion);
-        reservaDto.setGuestsCount(2);
-        // Nota: Aquí deberías setear IDs reales de tu DB H2 si es necesario
-        reservaDto.setRoomId(UUID.randomUUID());
-        reservaDto.setGuestId(UUID.randomUUID());
+    @Given("que deseo reservar para el huésped con ID {string}")
+    public void setHuespedId(String guestId) {
+        Serenity.setSessionVariable("idGuest").to(guestId);
+        reservationDto.setGuestId(UUID.fromString(guestId));
     }
 
-    @When("realizo la reserva")
-    public void ejecutarCreacion() {
-        // Ejecuta la misma lógica que probaste en TDD
-        reservaResponse = reservationService.create(reservaDto);
+    @And("la habitación {string} está disponible")
+    public void setHabitacionId(String roomId) {
+        Serenity.setSessionVariable("idRoom").to(roomId);
+        reservationDto.setRoomId(UUID.fromString(roomId));
     }
 
-    @Then("el sistema debe confirmar la reserva con un código único")
-    public void validarConfirmacion() {
-        assertThat(reservaResponse).isNotNull();
-        assertThat(reservaResponse.getId()).isNotNull();
-        System.out.println("✅ BDD: Reserva creada con ID: " + reservaResponse.getId());
+    @When("envío una solicitud de reserva desde {string} hasta {string} para {int} personas")
+    public void enviarSolicitudReserva(String checkIn, String checkOut, Integer guests) {
+        reservationDto.setCheckIn(LocalDateTime.parse(checkIn + "T14:00:00"));
+        reservationDto.setCheckOut(LocalDateTime.parse(checkOut + "T11:00:00"));
+        reservationDto.setGuestsCount(guests);
+
+        response = given()
+                .contentType(ContentType.JSON)
+                .body(reservationDto)
+                .when()
+                .post(BASE_URL);
+
+        Serenity.setSessionVariable("idReserv").to(response.jsonPath().getString("id"));
     }
 
-    // --- ESCENARIO: Consultar por ID ---
-    @Given("que existe una reserva con su ID {string}")
-    public void establecerIdBusqueda(String id) {
-        idBusqueda = UUID.fromString(id);
+    @Then("el sistema responde con un estado {int}")
+    public void validarStatusCode(int code) {
+        response.then().statusCode(code);
+    }
+    // --- ESCENARIO: Actualización ---
+
+    @Given("que tengo la reserva anterior previamente creada")
+    public void prepararIdParaUpdate() {
+        this.idReservaActual = Serenity.sessionVariableCalled("idReserv");
     }
 
-    @When("solicito los detalles de esa reserva")
-    public void ejecutarConsultaPorId() {
-        reservaResponse = reservationService.getById(idBusqueda);
-    }
-
-    @Then("el sistema debe devolver los datos correctos")
-    public void validarDatosRetornados() {
-        assertThat(reservaResponse).isNotNull();
-        assertThat(reservaResponse.getId()).isEqualTo(idBusqueda);
-        System.out.println("✅ BDD: Datos de reserva validados correctamente");
-    }
-
-    // --- ESCENARIO: Listado completo ---
-    @Given("que existen reservas registradas en el sistema")
-    public void verificarExistenciaReservas() {
-        // Podrías crear una reserva previa aquí para asegurar que la lista no esté vacía
-    }
-
-    @When("solicito la lista de todas las reservas")
-    public void ejecutarConsultaGeneral() {
-        listaReservas = reservationService.getAll();
-    }
-
-    @Then("el sistema debe volver una lista con todas las reservas")
-    public void validarLista() {
-        assertThat(listaReservas).isNotNull();
-        System.out.println("✅ BDD: Se recuperaron " + listaReservas.size() + " reservas");
-    }
-
-    // --- ESCENARIO: Modificar fecha ---
-    @Given("a que existe una reserva con ID {string}")
-    public void prepararIdParaActualizar(String id) {
-        idBusqueda = UUID.fromString(id);
-    }
-
-    @When("cambio la fecha de salida al {string}")
-    public void ejecutarActualizacion(String nuevaFecha) {
-        // Simulamos el DTO de actualización
+    @When("actualizo la fecha de salida al {string}")
+    public void actualizarFechaSalida(String nuevaFecha) {
+        // Preparamos el DTO de actualización
         ReservationDto updateDto = new ReservationDto();
-        updateDto.setNotes("Actualización de fecha BDD");
-        reservaResponse = reservationService.update(updateDto, idBusqueda);
+        updateDto.setCheckOut(LocalDateTime.parse(nuevaFecha + "T11:00:00"));
+        updateDto.setGuestId(UUID.fromString(Serenity.sessionVariableCalled("idGuest")));
+        updateDto.setRoomId(UUID.fromString(Serenity.sessionVariableCalled("idRoom")));
+        updateDto.setCheckIn(LocalDateTime.now().plusDays(1));
+        updateDto.setGuestsCount(1);
+
+        response = given()
+                .contentType(ContentType.JSON)
+                .pathParam("id", idReservaActual)
+                .body(updateDto)
+                .when()
+                .put(BASE_URL + "/{id}");
+        System.out.println(response.jsonPath().prettyPrint());
+
     }
 
-    @Then("el sistema debe actualizar la reserva con la nueva fecha")
-    public void validarActualizacion() {
-        assertThat(reservaResponse).isNotNull();
-        System.out.println("✅ BDD: Reserva " + idBusqueda + " actualizada con éxito");
+    @Then("el sistema confirma la actualización con un estado {int}")
+    public void confirmarUpdate(int code) {
+        response.then().statusCode(code);
     }
 
-    // --- ESCENARIO: Cancelar reserva ---
-    @When("solicito cancelar esa reserva")
-    public void ejecutarCancelacion() {
-        reservationService.delete(idBusqueda);
+
+// --- ESCENARIO: Consulta por ID ---
+
+    @When("solicito la información de la reserva por su ID")
+    public void solicitarPorId() {
+        response = given()
+                .pathParam("id", idReservaActual)
+                .when()
+                .get(BASE_URL + "/{id}");
     }
 
-    @Then("el sistema debe eliminar la reserva y confirmar la cancelación")
-    public void validarEliminacion() {
-        // Si el método no lanzó excepción, asumimos éxito (como en tu TDD)
-        System.out.println("✅ BDD: Reserva " + idBusqueda + " eliminada correctamente");
+    @Then("el ID coincide con la reserva anterior previamente creada")
+    public void validarIdCoincide() {
+        response.then().body("id", equalTo(idReservaActual));
+    }
+
+    // --- ESCENARIO: Fallo por Capacidad ---
+
+    @Given("que la habitación {string} tiene capacidad máxima de {int}")
+    public void setHabitacionConCapacidad(String roomId, Integer capacidad) {
+        reservationDto.setRoomId(UUID.fromString(roomId));
+    }
+
+    @When("envío una solicitud de reserva para {int} personas")
+    public void enviarSolicitudReservaCapacidadExcedida(Integer cantidadPersonas) {
+        reservationDto.setGuestsCount(cantidadPersonas);
+
+        reservationDto.setCheckIn(LocalDateTime.now().plusDays(1));
+        reservationDto.setCheckOut(LocalDateTime.now().plusDays(3));
+        reservationDto.setGuestId(UUID.fromString(Serenity.sessionVariableCalled("idGuest")));
+
+        response = given()
+                .contentType(ContentType.JSON)
+                .body(reservationDto)
+                .when()
+                .post(BASE_URL);
+
+        System.out.println("Respuesta del servicio (Validación Capacidad): " + response.asString());
+    }
+
+    @Then("el mensaje de error indica {string}")
+    public void validarMensajeError(String mensaje) {
+        response.then().body("error", equalTo(mensaje));
+    }
+
+    // --- ESCENARIO: Eliminación ---
+
+    @Given("que deseo cancelar la reserva anterior previamente creada")
+    public void prepararIdParaDelete() {
+        this.idReservaActual = Serenity.sessionVariableCalled("idReserv");
+    }
+
+    @When("solicito la eliminación de la reserva")
+    public void eliminarReserva() {
+        response = given()
+                .pathParam("id", idReservaActual)
+                .when()
+                .delete(BASE_URL + "/{id}");
+    }
+
+    @Then("la reserva ya no debe existir en el sistema")
+    public void verificarInexistencia() {
+        // Intentamos un GET y esperamos un 404
+        given()
+                .pathParam("id", idReservaActual)
+                .when()
+                .get(BASE_URL + "/{id}")
+                .then()
+                .statusCode(404);
     }
 }
